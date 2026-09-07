@@ -1,0 +1,122 @@
+{
+  "entities": {
+    "Registration": {
+      "title": "Team Registration",
+      "description": "A squad registered for the 24-team OG Esports BR Clash Tournament",
+      "type": "object",
+      "properties": {
+        "teamName": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 60,
+          "description": "Unique team or clan name"
+        },
+        "teamNameLower": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 60,
+          "description": "Lowercased team name for duplicate prevention"
+        },
+        "captainName": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 60,
+          "description": "Full name or in-game IGN of team captain"
+        },
+        "whatsapp": {
+          "type": "string",
+          "pattern": "^[0-9]{10}$",
+          "description": "10-digit WhatsApp number for room credentials dispatch"
+        },
+        "player1": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 80,
+          "description": "Player 1 IGN / UID"
+        },
+        "player2": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 80,
+          "description": "Player 2 IGN / UID"
+        },
+        "player3": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 80,
+          "description": "Player 3 IGN / UID"
+        },
+        "player4": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 80,
+          "description": "Player 4 IGN / UID"
+        },
+        "substitute": {
+          "type": "string",
+          "maxLength": 80,
+          "description": "Optional 5th substitute player IGN / UID"
+        },
+        "slotNumber": {
+          "type": "integer",
+          "description": "Sequential slot number between 1 and 24"
+        },
+        "registeredAt": {
+          "type": "string",
+          "description": "Timestamp of successful registration"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["registered", "confirmed", "cancelled"],
+          "description": "Registration verification status"
+        }
+      },
+      "required": [
+        "teamName",
+        "teamNameLower",
+        "captainName",
+        "whatsapp",
+        "player1",
+        "player2",
+        "player3",
+        "player4",
+        "slotNumber",
+        "status"
+      ]
+    },
+    "TournamentStats": {
+      "title": "Tournament Statistics",
+      "description": "Public statistics and slot availability tracker",
+      "type": "object",
+      "properties": {
+        "registeredCount": {
+          "type": "integer",
+          "description": "Current number of registered teams"
+        },
+        "maxSlots": {
+          "type": "integer",
+          "description": "Maximum allowed teams (24)"
+        },
+        "isOpen": {
+          "type": "boolean",
+          "description": "Whether registration is actively accepting entries"
+        },
+        "lastUpdated": {
+          "type": "string",
+          "description": "Timestamp of last slot change"
+        }
+      },
+      "required": ["registeredCount", "maxSlots", "isOpen"]
+    }
+  },
+  "firestore": {
+    "/registrations/{registrationId}": {
+      "schema": "Registration",
+      "description": "Collection of all squad registrations"
+    },
+    "/metadata/{docId}": {
+      "schema": "TournamentStats",
+      "description": "Tournament public slot counters and metadata"
+    }
+  }
+}

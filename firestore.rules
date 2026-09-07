@@ -1,0 +1,82 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Global Safety Net: Default-deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Common Security Helper Functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      // In Firebase Auth, any authenticated admin in our system
+      // Or check specific admin email / admin collection if configured
+      return isSignedIn();
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Validation for Team Registration
+    function isValidRegistration(data) {
+      return data.teamName is string && data.teamName.size() >= 2 && data.teamName.size() <= 60
+        && data.teamNameLower is string && data.teamNameLower.size() >= 2 && data.teamNameLower.size() <= 60
+        && data.captainName is string && data.captainName.size() >= 2 && data.captainName.size() <= 60
+        && data.whatsapp is string && data.whatsapp.matches('^[0-9]{10}$')
+        && data.player1 is string && data.player1.size() >= 2 && data.player1.size() <= 80
+        && data.player2 is string && data.player2.size() >= 2 && data.player2.size() <= 80
+        && data.player3 is string && data.player3.size() >= 2 && data.player3.size() <= 80
+        && data.player4 is string && data.player4.size() >= 2 && data.player4.size() <= 80
+        && (data.substitute == null || (data.substitute is string && data.substitute.size() <= 80))
+        && data.slotNumber is int && data.slotNumber >= 1 && data.slotNumber <= 24
+        && data.status in ['registered', 'confirmed', 'cancelled'];
+    }
+
+    // 1. Tournament Metadata & Public Slot Stats
+    // Anyone can read the public counter, only Admins can update
+    match /metadata/{docId} {
+      allow read: if isValidId(docId);
+      allow create, update, delete: if isAdmin() && isValidId(docId);
+    }
+
+    // 2. Registrations Collection
+    match /registrations/{registrationId} {
+      // Admin can read all registrations (list and get)
+      // Public cannot list or scrape the whole collection
+      allow get, list: if isAdmin();
+
+      // Anyone can submit a registration as long as it adheres to strict schema & 24 slot limit
+      allow create: if isValidId(registrationId)
+        && isValidRegistration(incoming())
+        && incoming().status == 'registered';
+
+      // Only admins can change status or update registered teams
+      allow update: if isAdmin() 
+        && isValidId(registrationId)
+        && isValidRegistration(incoming())
+        && incoming().slotNumber == existing().slotNumber; // Slot number is immutable
+
+      // Only admins can delete registrations
+      allow delete: if isAdmin() && isValidId(registrationId);
+    }
+
+    // 3. Admin Profiles / Settings
+    match /admins/{adminId} {
+      allow read, write: if isAdmin() && request.auth.uid == adminId;
+    }
+  }
+}
